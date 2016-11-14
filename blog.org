@@ -1,0 +1,35 @@
+* 2016-11-13
+** Followed ROS tuto on docker: https://hub.docker.com/_/ros/
+** ping android to/from ubuntu on aws
+- install ZeroTier
+  curl -s https://install.zerotier.com/ | bash
+- create ZeroTier account, create new network
+- check IPV4 auto-assign
+zerotier-cli join 565799d8f6f7f87f 
+- install ZeroTier on Android, join network
+- On the Website https://my.zerotier.com/network/565799d8f6f7f87f, check 'auth' on each member, and give them a good name
+- let's ping
+  ping 10.242.58.128 # from ubuntu
+  ping 10.242.116.228 # from android
+** ROS pub/sub from android to ubuntu
+*** Android:
+- Run local master node
+- use auto IP address
+ 
+*** Ubuntu:
+docker run -it --rm  --name master ros:indigo-perception bash
+export ROS_MASTER_URI=http://10.242.58.128:11311
+rostopic list
+# /camera/compressed !!!
+#docker run --expose 11311 -it --rm     --net foo     --name master     ros:ros-tutorials     roscore
+rosrun image_view image_view image:=/camera/compressed
+# Doesn't work !! Docker must use X11
+** Image view from a docker image
+http://toddsampson.com/post/131965350342/ros-visualization-packages-in-docker
+mkdir -p ~/ros/image-view
+vim Dockerfile
+docker build --tag ros:indigo-image-pipeline .
+vim docker-compose.yml
+# Paste website's compose and change ROS_MASTER_URI
+
+*** TODO does not work !! Try another docker image that runs firefox: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
