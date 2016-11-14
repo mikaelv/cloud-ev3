@@ -1,0 +1,17 @@
+image_view:
+  build: .
+  # image: toddsampson/ros-indigo-image_pipeline
+  container_name: image_view
+  hostname: image_view
+  #name: image_view
+  #volumes_from:
+  #- "rosmaster"
+  # net: rosdocker
+  volumes:
+    - "/tmp/.X11-unix:/tmp/.X11-unix"
+  environment:
+    - "DISPLAY=:1001"
+    - "ROS_HOSTNAME=image_view"
+    - "ROS_MASTER_URI=http://10.242.58.128:11311"
+  command: rosrun image_view image_view image:=/camera/compressed
+  #command: rostopic list
