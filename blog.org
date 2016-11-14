@@ -33,3 +33,17 @@ vim docker-compose.yml
 # Paste website's compose and change ROS_MASTER_URI
 
 *** TODO does not work !! Try another docker image that runs firefox: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
+
+* 2016-11-18
+  - got some trouble with Ubuntu running from NoMachine: it is hanging
+  - it could have been caused by the disk being full at some point yesterday, or by ros writing to X, or by the hostname renaming ?
+  - recreated a new machine from snapshot with 20Gb
+  - re-installed ZeroTier
+  - Ran ros-image-pipeline/docker-compose up => displays an X Window, but no image :-(
+  - this works:
+  #+BEGIN_SRC bash
+  docker build -t ros-image-pipeline .
+  docker run -it --rm -e ROS_MASTER_URI=http://10.242.58.128:11311 ros-image-pipeline 
+  rostopic list
+  #+END_SRC
+  - next step: investigate network issues: http://wiki.ros.org/ROS/NetworkSetup
