@@ -5,7 +5,7 @@
   curl -s https://install.zerotier.com/ | bash
 - create ZeroTier account, create new network
 - check IPV4 auto-assign
-zerotier-cli join 565799d8f6f7f87f 
+sudo zerotier-cli join 565799d8f6f7f87f 
 - install ZeroTier on Android, join network
 - On the Website https://my.zerotier.com/network/565799d8f6f7f87f, check 'auth' on each member, and give them a good name
 - let's ping
@@ -39,6 +39,7 @@ vim docker-compose.yml
   - it could have been caused by the disk being full at some point yesterday, or by ros writing to X, or by the hostname renaming ?
   - recreated a new machine from snapshot with 20Gb
   - re-installed ZeroTier
+  - ran the docker firefox image, OK !
   - Ran ros-image-pipeline/docker-compose up => displays an X Window, but no image :-(
   - this works:
   #+BEGIN_SRC bash
@@ -47,3 +48,48 @@ vim docker-compose.yml
   rostopic list
   #+END_SRC
   - next step: investigate network issues: http://wiki.ros.org/ROS/NetworkSetup
+* 2016-11-19
+** setup dnsmasq
+#+BEGIN_SRC bash 
+sudo apt install dnsmasq
+vim /etc/dnsmasq.conf
+interfaces=eth0 
+:wq
+
+vim /etc/hosts 
+Ga
+10.242.58.128 ev3
+52.51.247.240 aws
+:wq
+
+sudo systemctl restart dnsmasq
+ping aws
+ping ev3 
+nslookup ev3 aws
+
+# On Android: change wifi settings to setup DNS
+ping ev3 
+ping aws
+#+END_SRC  
+** checked network connectivity http://wiki.ros.org/ROS/NetworkSetup
+#+BEGIN_SRC bash
+# Ubuntu
+nc -l -p 1234
+# Android on SSHDroid
+echo hello from ev3|nc aws 1234
+nc -l -p 1234
+# Ubuntu
+echo hello from aws |nc ev3 1234
+#+END_SRC
+
+** tried the image_view again:
+#+BEGIN_SRC bash
+docker run --dns 52.51.247.240 -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline
+rostopic list
+rosrun image_view image_view image:=/camera/compressed
+# No image :-(
+rostopic echo /camera/compressed
+# Unable to register with master node [http://ev3:11311]: master may not be running yet. Will keep trying.
+#+END_SRC
+The problem is that the android box cannot connect back to the docker container, the port is not open, and we need some routing !
+There might be a solution with MacVLAN: http://blog.oddbit.com/2014/08/11/four-ways-to-connect-a-docker/
