@@ -62,7 +62,7 @@ Ga
 52.51.247.240 aws
 :wq
 
-sudo systemctl restart dnsmasq
+sudo systemctl enable dnsmasq
 ping aws
 ping ev3 
 nslookup ev3 aws
@@ -93,3 +93,16 @@ rostopic echo /camera/compressed
 #+END_SRC
 The problem is that the android box cannot connect back to the docker container, the port is not open, and we need some routing !
 There might be a solution with MacVLAN: http://blog.oddbit.com/2014/08/11/four-ways-to-connect-a-docker/
+
+* 2016-11-20
+** MacVLan
+- on ZeroTier, check 'bridge' checkbox on the AWS ubuntu host
+#+BEGIN_SRC bash
+docker network create -d macvlan --subnet=10.242.0.0/16  -o parent=zt0 rosnet
+docker run --dns 52.51.247.240 --net rosnet -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline
+ping www.google.fr # does not work :-(
+ping ev3 # does not work
+ping 10.242.58.128  # ip of the android phone, works !!
+ping 10.242.119.232 # ip of ubuntu laptop at home, works !!
+#+END_SRC
+- all I need to do now is to specify the right gateway, but how can I get a gateway on the ZeroTier network ? Maybe with iptables ?
