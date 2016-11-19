@@ -34,7 +34,7 @@ vim docker-compose.yml
 
 *** TODO does not work !! Try another docker image that runs firefox: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
 
-* 2016-11-18
+* 2016-11-14
   - got some trouble with Ubuntu running from NoMachine: it is hanging
   - it could have been caused by the disk being full at some point yesterday, or by ros writing to X, or by the hostname renaming ?
   - recreated a new machine from snapshot with 20Gb
@@ -48,7 +48,7 @@ vim docker-compose.yml
   rostopic list
   #+END_SRC
   - next step: investigate network issues: http://wiki.ros.org/ROS/NetworkSetup
-* 2016-11-19
+* 2016-11-15
 ** setup dnsmasq
 #+BEGIN_SRC bash 
 sudo apt install dnsmasq
@@ -94,7 +94,7 @@ rostopic echo /camera/compressed
 The problem is that the android box cannot connect back to the docker container, the port is not open, and we need some routing !
 There might be a solution with MacVLAN: http://blog.oddbit.com/2014/08/11/four-ways-to-connect-a-docker/
 
-* 2016-11-20
+* 2016-11-16
 ** MacVLan
 - on ZeroTier, check 'bridge' checkbox on the AWS ubuntu host
 #+BEGIN_SRC bash
@@ -106,3 +106,40 @@ ping 10.242.58.128  # ip of the android phone, works !!
 ping 10.242.119.232 # ip of ubuntu laptop at home, works !!
 #+END_SRC
 - all I need to do now is to specify the right gateway, but how can I get a gateway on the ZeroTier network ? Maybe with iptables ?
+* 2016-11-17
+** Gateway
+Let's try to route all my traffic through the AWS host: https://www.zerotier.com/community/topic/69/default-route-override-a-k-a-full-tunnel-in-1-1-6
+If this works, I can watch irish TV !
+#+BEGIN_SRC bash
+sudo vi /etc/sysctl.conf
+/ip_forward
+0x:w
+
+sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.242.0.0/16 -j SNAT --to-source 52.51.247.240
+sudo iptables -A FORWARD -i eth0 -s 0.0.0.0/0 -d 10.242.0.0/16 -j ACCEPT
+sudo iptables -A FORWARD -i zt+ -s 10.242.0.0/16 -d 0.0.0.0/0 -j ACCEPT 
+# On ubuntu at home
+ping 62.253.72.153 -I zt0 # network unreachable :-(
+# On AWS
+sudo tcpdump -i zt0 # shows that the packets from home are coming, but the AWS host does not route them
+
+#+END_SRC
+Well it does not work, and even if it did, the MacVLan thing would not let me route the docker container's traffic through the host.
+It is mentionned here: https://docs.docker.com/engine/userguide/networking/get-started-macvlan/
+An alternative would be to install ZeroTier inside the docker container => let's try that tomorrow
+
+* 2016-11-18
+** ZeroTier in docker
+
+#+BEGIN_SRC bash
+docker run  -it --rm --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline bash
+curl https://install.zerotier.com/ | bash
+sudo zerotier-cli join ...
+#+END_SRC
+#+BEGIN_SRC bash
+vim Dockerfile
+# see committed file
+docker build -t ros-image-pipeline  .
+docker run  -it --rm -v ~/zerotier-one:/var/lib/zerotier-one --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline 
+# identity is preserved using the volume; use a different volume for a different identity
+#+END_SRC

@@ -4,6 +4,15 @@ RUN apt-get -y update
 
 RUN apt-get -y install ros-indigo-image-pipeline
 
+# ZeroTier
+RUN curl https://install.zerotier.com/ | bash 
+
+EXPOSE 9993
+
+# Allows to keep the same id between runs
+VOLUME /var/lib/zerotier-one
+
+
 # IMPORTANT: Update to the `id -u` value on your computer
 ENV uid 1000 
 # IMPORTANT: Update to the `id -g` value on your computer
@@ -19,3 +28,7 @@ RUN export uid=${uid} gid=${gid} && \
 
 USER ros
 ENV HOME /home/ros
+
+# TODO create a start.sh with the join
+# TODO ARG does not seem to do anything ?
+CMD sudo service zerotier-one start && sudo zerotier-cli join 565799d8f6f7f87f && bash
