@@ -3,7 +3,7 @@ services:
   master:
     # build: .
   # image: toddsampson/ros-indigo-image_pipeline
-    image: ros-image-pipeline
+    image: ros-indigo-zt
     container_name: master
     network_mode: rosnet
     # TODO change in host's /etc/resolv.conf and remove this property 
@@ -22,11 +22,13 @@ services:
       - /home/ubuntu/docker-volumes/master/zerotier-one:/var/lib/zerotier-one 
     environment:
       - "DISPLAY=:1001"
-#    - "ROS_HOSTNAME=image_view"
+      - "ZT_NETWORK=565799d8f6f7f87f"
+# #    - "ROS_HOSTNAME=image_view"
       - "ROS_MASTER_URI=http://ev3:11311"
   #command: rosrun image_view image_view image:=/camera/compressed
 # #  command: sudo zerotier-cli join 565799d8f6f7f87f    
-    command: bash -c "sudo service zerotier-one start && sudo zerotier-cli join 565799d8f6f7f87f && bash"
+  #  command: bash -c "sudo service zerotier-one start && sudo zerotier-cli join 565799d8f6f7f87f && bash"
+    command: bash -c "rostopic list && bash"
 #  command: bash
   #command: roscore
   #command: rostopic list

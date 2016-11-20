@@ -140,6 +140,27 @@ sudo zerotier-cli join ...
 vim Dockerfile
 # see committed file
 docker build -t ros-image-pipeline  .
-docker run  -it --rm -v ~/zerotier-one:/var/lib/zerotier-one --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline 
+docker run  --dns 52.51.247.240 -it --rm -v ~/zerotier-one:/var/lib/zerotier-one --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline 
 # identity is preserved using the volume; use a different volume for a different identity
 #+END_SRC
+* 2016-11-19
+Cannot start the remote desktop. 
+#+BEGIN_SRC bash
+sudo less /usr/NX/var/log/nxserver.log
+rm -rf ~/.config
+sudo systemctl restart lightdm 
+# Disable X11
+sudo systemctl isolate multi-user.target
+sudo systemctl enable multi-user.target
+sudo systemctl set-default multi-user.target
+sudo vi /usr/NX/etc/server.cfg
+# CreateDisplay 1 
+# DisplayOwner "ubuntu"
+#+END_SRC
+- added master in /etc/hosts
+- set ROS_MASTER_URI=http://ev3:11311 solved the communication issue !!
+- I can now do rostopic echo /voltage, but the image is still grey 
+- Learned more about docker-compose: run can override the build's run command, used entrypoint
+- solved two bugs with the image_view, but still no image: 
+  - https://github.com/jsk-ros-pkg/jsk_travis/issues/187 sudo ln /dev/null /dev/raw1394
+  - sudo apt-get install libcanberra-gtk*
