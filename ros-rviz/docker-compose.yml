@@ -1,0 +1,48 @@
+version: '2'
+services:
+  master:
+    image: ros-indigo-zt
+    container_name: master
+    hostname: master
+    network_mode: rosnet
+    # TODO change in host's /etc/resolv.conf and remove this property 
+    dns: 52.51.247.240 
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN       
+    volumes:
+      - /home/ubuntu/docker-volumes/master/zerotier-one:/var/lib/zerotier-one 
+    environment:
+      - "ZT_NETWORK=565799d8f6f7f87f"
+    command: roscore
+  rviz:
+    # build: .
+    image: ros-rviz
+    container_name: rviz
+    hostname: rviz
+    network_mode: rosnet
+    # TODO change in host's /etc/resolv.conf and remove this property 
+    dns: 52.51.247.240 
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN       
+    volumes:
+      - "/tmp/.X11-unix:/tmp/.X11-unix"
+      - /home/ubuntu/docker-volumes/rviz/zerotier-one:/var/lib/zerotier-one 
+    environment:
+      - "DISPLAY=:1001"
+      - "ZT_NETWORK=565799d8f6f7f87f"
+      - "QT_X11_NO_MITSHM=1"
+# #    - "ROS_HOSTNAME=image_view"
+#      - "ROS_MASTER_URI=http://master:11311"
+      - "ROS_MASTER_URI=http://ev3:11311"
+    command: rosrun rviz rviz
+# #  command: sudo zerotier-cli join 565799d8f6f7f87f    
+  #  command: bash -c "sudo service zerotier-one start && sudo zerotier-cli join 565799d8f6f7f87f && bash"
+#  command: bash
+  #command: roscore
+  #command: rostopic list

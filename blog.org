@@ -164,3 +164,11 @@ sudo vi /usr/NX/etc/server.cfg
 - solved two bugs with the image_view, but still no image: 
   - https://github.com/jsk-ros-pkg/jsk_travis/issues/187 sudo ln /dev/null /dev/raw1394
   - sudo apt-get install libcanberra-gtk*
+
+* 2016-11-20
+- tried to connect from Android to master in docker, does not work. No logs, nothing using tcpdump on the docker container. I should inspect android's logs to debug this.
+- lesson learned: tcpdump -i zt0 only shows stuff if you are on the same machine, ZeroTier might not broadcast packets to the whole network.
+- blocked the DNS access from the docker container after having set the IP filtering on EC2 security group. Solved it by adding DNS rules
+- ran rviz in docker
+- ran teleop, I can remote control the robot !!! If rostopic list does not show the EV3 topic, unplug/replug the USB cable.
+- the ping between any machine and ev3 is quite long and inconsistent, it might be due to the wifi or android being too loaded ?

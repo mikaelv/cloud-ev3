@@ -1,0 +1,22 @@
+version: '2'
+services:
+  teleop:
+    image: ros-indigo-zt
+    container_name: teleop
+    hostname: master
+    network_mode: rosnet
+    # TODO change in host's /etc/resolv.conf and remove this property 
+    dns: 52.51.247.240 
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN       
+    volumes:
+      - /home/ubuntu/docker-volumes/master/zerotier-one:/var/lib/zerotier-one 
+    environment:
+      - "ZT_NETWORK=565799d8f6f7f87f"
+      - "ROS_MASTER_URI=http://ev3:11311"
+    command: bash -c "(rostopic list) && (rosrun topic_tools relay /turtle1/cmd_vel /cmd_vel) & (rosrun turtlesim turtle_teleop_key)"
+#    command: bash
+
