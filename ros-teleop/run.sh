@@ -1,1 +1,1 @@
-docker-compose run teleop
+docker-compose run teleop $1

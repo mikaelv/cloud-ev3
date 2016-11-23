@@ -1,53 +1,105 @@
-* 2016-11-13
-** Followed ROS tuto on docker: https://hub.docker.com/_/ros/
-** ping android to/from ubuntu on aws
-- install ZeroTier
-  curl -s https://install.zerotier.com/ | bash
-- create ZeroTier account, create new network
-- check IPV4 auto-assign
-sudo zerotier-cli join 565799d8f6f7f87f 
-- install ZeroTier on Android, join network
-- On the Website https://my.zerotier.com/network/565799d8f6f7f87f, check 'auth' on each member, and give them a good name
-- let's ping
-  ping 10.242.58.128 # from ubuntu
-  ping 10.242.116.228 # from android
-** ROS pub/sub from android to ubuntu
-*** Android:
-- Run local master node
-- use auto IP address
- 
-*** Ubuntu:
-docker run -it --rm  --name master ros:indigo-perception bash
-export ROS_MASTER_URI=http://10.242.58.128:11311
-rostopic list
-# /camera/compressed !!!
-#docker run --expose 11311 -it --rm     --net foo     --name master     ros:ros-tutorials     roscore
-rosrun image_view image_view image:=/camera/compressed
-# Doesn't work !! Docker must use X11
-** Image view from a docker image
-http://toddsampson.com/post/131965350342/ros-visualization-packages-in-docker
-mkdir -p ~/ros/image-view
+* 2016-11-23
+- compiled the project in IntelliJ, fixed 2 issues with deprecated methods
+- cannot use Android USB over NoMachine ?
+- emabled ADB over TCP/IP:
+#+BEGIN_SRC bash
+adb tcpip 5555
+# On Android, Developer options -> enable ADB over network
+adb connect ev3:5555
+#+END_SRC
+- /opt/android-sdk/tools has disappeared, maybe I unchecked the wrong box (platform tools)
+- un-tared the android sdk and checked platform tools, now I have a new version of adb in /opt/android-sdk/platform-tools
+- managed to deploy the application and got the ROS topics !! 
+- next step: try the TF fix, commit the android code to github, use gradle to get rid of lib/*.jar
+* 2016-11-22
+- setup IntelliJ and Android SDK
+- checked out Lego Ros: https://sourceforge.net/p/ev3javabrick/wiki/EV3%20communication%20library/
+- there is a tf and odom publication, but it seems like they have the wrong frameId
+- struggled to compile the project, it requires Android 23 and JDK 1.7
+- got an error "Error:android-apt-compiler: Cannot run program "/opt/android-sdk/build-tools/23.0.3/aapt": error=2, No such file or directory". 
+  It may be because my ubuntu does not support 32 bits binaries: http://stackoverflow.com/questions/19523502/how-to-make-androids-aapt-and-adb-work-on-64-bit-ubuntu-without-ia32-libs-work 
+* 2016-11-20
+- tried to connect from Android to master in docker, does not work. No logs, nothing using tcpdump on the docker container. I should inspect android's logs to debug this.
+- lesson learned: tcpdump -i zt0 only shows stuff if you are on the same machine, ZeroTier might not broadcast packets to the whole network.
+- blocked the DNS access from the docker container after having set the IP filtering on EC2 security group. Solved it by adding DNS rules
+- ran rviz in docker, this will be useful for GPU acceleration: http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration
+- ran teleop, I can remote control the robot !!! If rostopic list does not show the EV3 topic, unplug/replug the USB cable.
+- the ping between any machine and ev3 is quite long and inconsistent, it might be due to the wifi or android being too loaded ?
+- setup ros-by-example docker image, reproduced Arbotix simulation with RViz Chapter 6. I had to change the fixed frame to /odom in rviz and add an odometry visualisation
+- setup rqt_reconfigure, tried to calibrate (7.4). But it looks like I am missing a tf base_link.
+- rosrun tf view_frames && evince frames.pdf => nothing
+    
+* 2016-11-19
+Cannot start the remote desktop. 
+#+BEGIN_SRC bash
+sudo less /usr/NX/var/log/nxserver.log
+rm -rf ~/.config
+sudo systemctl restart lightdm 
+# Disable X11
+sudo systemctl isolate multi-user.target
+sudo systemctl enable multi-user.target
+sudo systemctl set-default multi-user.target
+sudo vi /usr/NX/etc/server.cfg
+# CreateDisplay 1 
+# DisplayOwner "ubuntu"
+#+END_SRC
+- added master in /etc/hosts
+- set ROS_MASTER_URI=http://ev3:11311 solved the communication issue !!
+- I can now do rostopic echo /voltage, but the image is still grey 
+- Learned more about docker-compose: run can override the build's run command, used entrypoint
+- solved two bugs with the image_view, but still no image: 
+  - https://github.com/jsk-ros-pkg/jsk_travis/issues/187 sudo ln /dev/null /dev/raw1394
+  - sudo apt-get install libcanberra-gtk*
+
+* 2016-11-18
+** ZeroTier in docker
+
+#+BEGIN_SRC bash
+docker run  -it --rm --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline bash
+curl https://install.zerotier.com/ | bash
+sudo zerotier-cli join ...
+#+END_SRC
+#+BEGIN_SRC bash
 vim Dockerfile
-docker build --tag ros:indigo-image-pipeline .
-vim docker-compose.yml
-# Paste website's compose and change ROS_MASTER_URI
+# see committed file
+docker build -t ros-image-pipeline  .
+docker run  --dns 52.51.247.240 -it --rm -v ~/zerotier-one:/var/lib/zerotier-one --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline 
+# identity is preserved using the volume; use a different volume for a different identity
+#+END_SRC
+* 2016-11-17
+** Gateway
+Let's try to route all my traffic through the AWS host: https://www.zerotier.com/community/topic/69/default-route-override-a-k-a-full-tunnel-in-1-1-6
+If this works, I can watch irish TV !
+#+BEGIN_SRC bash
+sudo vi /etc/sysctl.conf
+/ip_forward
+0x:w
 
-*** TODO does not work !! Try another docker image that runs firefox: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
+sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.242.0.0/16 -j SNAT --to-source 52.51.247.240
+sudo iptables -A FORWARD -i eth0 -s 0.0.0.0/0 -d 10.242.0.0/16 -j ACCEPT
+sudo iptables -A FORWARD -i zt+ -s 10.242.0.0/16 -d 0.0.0.0/0 -j ACCEPT 
+# On ubuntu at home
+ping 62.253.72.153 -I zt0 # network unreachable :-(
+# On AWS
+sudo tcpdump -i zt0 # shows that the packets from home are coming, but the AWS host does not route them
 
-* 2016-11-14
-  - got some trouble with Ubuntu running from NoMachine: it is hanging
-  - it could have been caused by the disk being full at some point yesterday, or by ros writing to X, or by the hostname renaming ?
-  - recreated a new machine from snapshot with 20Gb
-  - re-installed ZeroTier
-  - ran the docker firefox image, OK !
-  - Ran ros-image-pipeline/docker-compose up => displays an X Window, but no image :-(
-  - this works:
-  #+BEGIN_SRC bash
-  docker build -t ros-image-pipeline .
-  docker run -it --rm -e ROS_MASTER_URI=http://10.242.58.128:11311 ros-image-pipeline 
-  rostopic list
-  #+END_SRC
-  - next step: investigate network issues: http://wiki.ros.org/ROS/NetworkSetup
+#+END_SRC
+Well it does not work, and even if it did, the MacVLan thing would not let me route the docker container's traffic through the host.
+It is mentionned here: https://docs.docker.com/engine/userguide/networking/get-started-macvlan/
+An alternative would be to install ZeroTier inside the docker container => let's try that tomorrow
+
+* 2016-11-16
+** MacVLan
+- on ZeroTier, check 'bridge' checkbox on the AWS ubuntu host
+#+BEGIN_SRC bash
+docker network create -d macvlan --subnet=10.242.0.0/16  -o parent=zt0 rosnet
+docker run --dns 52.51.247.240 --net rosnet -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline
+ping www.google.fr # does not work :-(
+ping ev3 # does not work
+ping 10.242.58.128  # ip of the android phone, works !!
+ping 10.242.119.232 # ip of ubuntu laptop at home, works !!
+#+END_SRC
+- all I need to do now is to specify the right gateway, but how can I get a gateway on the ZeroTier network ? Maybe with iptables ?
 * 2016-11-15
 ** setup dnsmasq
 #+BEGIN_SRC bash 
@@ -94,85 +146,53 @@ rostopic echo /camera/compressed
 The problem is that the android box cannot connect back to the docker container, the port is not open, and we need some routing !
 There might be a solution with MacVLAN: http://blog.oddbit.com/2014/08/11/four-ways-to-connect-a-docker/
 
-* 2016-11-16
-** MacVLan
-- on ZeroTier, check 'bridge' checkbox on the AWS ubuntu host
-#+BEGIN_SRC bash
-docker network create -d macvlan --subnet=10.242.0.0/16  -o parent=zt0 rosnet
-docker run --dns 52.51.247.240 --net rosnet -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline
-ping www.google.fr # does not work :-(
-ping ev3 # does not work
-ping 10.242.58.128  # ip of the android phone, works !!
-ping 10.242.119.232 # ip of ubuntu laptop at home, works !!
-#+END_SRC
-- all I need to do now is to specify the right gateway, but how can I get a gateway on the ZeroTier network ? Maybe with iptables ?
-* 2016-11-17
-** Gateway
-Let's try to route all my traffic through the AWS host: https://www.zerotier.com/community/topic/69/default-route-override-a-k-a-full-tunnel-in-1-1-6
-If this works, I can watch irish TV !
-#+BEGIN_SRC bash
-sudo vi /etc/sysctl.conf
-/ip_forward
-0x:w
-
-sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.242.0.0/16 -j SNAT --to-source 52.51.247.240
-sudo iptables -A FORWARD -i eth0 -s 0.0.0.0/0 -d 10.242.0.0/16 -j ACCEPT
-sudo iptables -A FORWARD -i zt+ -s 10.242.0.0/16 -d 0.0.0.0/0 -j ACCEPT 
-# On ubuntu at home
-ping 62.253.72.153 -I zt0 # network unreachable :-(
-# On AWS
-sudo tcpdump -i zt0 # shows that the packets from home are coming, but the AWS host does not route them
-
-#+END_SRC
-Well it does not work, and even if it did, the MacVLan thing would not let me route the docker container's traffic through the host.
-It is mentionned here: https://docs.docker.com/engine/userguide/networking/get-started-macvlan/
-An alternative would be to install ZeroTier inside the docker container => let's try that tomorrow
-
-* 2016-11-18
-** ZeroTier in docker
-
-#+BEGIN_SRC bash
-docker run  -it --rm --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline bash
-curl https://install.zerotier.com/ | bash
-sudo zerotier-cli join ...
-#+END_SRC
-#+BEGIN_SRC bash
+* 2016-11-14
+  - got some trouble with Ubuntu running from NoMachine: it is hanging
+  - it could have been caused by the disk being full at some point yesterday, or by ros writing to X, or by the hostname renaming ?
+  - recreated a new machine from snapshot with 20Gb
+  - re-installed ZeroTier
+  - ran the docker firefox image, OK !
+  - Ran ros-image-pipeline/docker-compose up => displays an X Window, but no image :-(
+  - this works:
+  #+BEGIN_SRC bash
+  docker build -t ros-image-pipeline .
+  docker run -it --rm -e ROS_MASTER_URI=http://10.242.58.128:11311 ros-image-pipeline 
+  rostopic list
+  #+END_SRC
+  - next step: investigate network issues: http://wiki.ros.org/ROS/NetworkSetup
+* 2016-11-13
+** Followed ROS tuto on docker: https://hub.docker.com/_/ros/
+** ping android to/from ubuntu on aws
+- install ZeroTier
+  curl -s https://install.zerotier.com/ | bash
+- create ZeroTier account, create new network
+- check IPV4 auto-assign
+sudo zerotier-cli join 565799d8f6f7f87f 
+- install ZeroTier on Android, join network
+- On the Website https://my.zerotier.com/network/565799d8f6f7f87f, check 'auth' on each member, and give them a good name
+- let's ping
+  ping 10.242.58.128 # from ubuntu
+  ping 10.242.116.228 # from android
+** ROS pub/sub from android to ubuntu
+*** Android:
+- Run local master node
+- use auto IP address
+ 
+*** Ubuntu:
+docker run -it --rm  --name master ros:indigo-perception bash
+export ROS_MASTER_URI=http://10.242.58.128:11311
+rostopic list
+# /camera/compressed !!!
+#docker run --expose 11311 -it --rm     --net foo     --name master     ros:ros-tutorials     roscore
+rosrun image_view image_view image:=/camera/compressed
+# Doesn't work !! Docker must use X11
+** Image view from a docker image
+http://toddsampson.com/post/131965350342/ros-visualization-packages-in-docker
+mkdir -p ~/ros/image-view
 vim Dockerfile
-# see committed file
-docker build -t ros-image-pipeline  .
-docker run  --dns 52.51.247.240 -it --rm -v ~/zerotier-one:/var/lib/zerotier-one --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --device=/dev/net/tun -v /tmp/.X11-unix:/tmp/.X11-unix -e ROS_MASTER_URI=http://ev3:11311 ros-image-pipeline 
-# identity is preserved using the volume; use a different volume for a different identity
-#+END_SRC
-* 2016-11-19
-Cannot start the remote desktop. 
-#+BEGIN_SRC bash
-sudo less /usr/NX/var/log/nxserver.log
-rm -rf ~/.config
-sudo systemctl restart lightdm 
-# Disable X11
-sudo systemctl isolate multi-user.target
-sudo systemctl enable multi-user.target
-sudo systemctl set-default multi-user.target
-sudo vi /usr/NX/etc/server.cfg
-# CreateDisplay 1 
-# DisplayOwner "ubuntu"
-#+END_SRC
-- added master in /etc/hosts
-- set ROS_MASTER_URI=http://ev3:11311 solved the communication issue !!
-- I can now do rostopic echo /voltage, but the image is still grey 
-- Learned more about docker-compose: run can override the build's run command, used entrypoint
-- solved two bugs with the image_view, but still no image: 
-  - https://github.com/jsk-ros-pkg/jsk_travis/issues/187 sudo ln /dev/null /dev/raw1394
-  - sudo apt-get install libcanberra-gtk*
+docker build --tag ros:indigo-image-pipeline .
+vim docker-compose.yml
+# Paste website's compose and change ROS_MASTER_URI
 
-* 2016-11-20
-- tried to connect from Android to master in docker, does not work. No logs, nothing using tcpdump on the docker container. I should inspect android's logs to debug this.
-- lesson learned: tcpdump -i zt0 only shows stuff if you are on the same machine, ZeroTier might not broadcast packets to the whole network.
-- blocked the DNS access from the docker container after having set the IP filtering on EC2 security group. Solved it by adding DNS rules
-- ran rviz in docker, this will be useful for GPU acceleration: http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration
-- ran teleop, I can remote control the robot !!! If rostopic list does not show the EV3 topic, unplug/replug the USB cable.
-- the ping between any machine and ev3 is quite long and inconsistent, it might be due to the wifi or android being too loaded ?
-- setup ros-by-example docker image, reproduced Arbotix simulation with RViz Chapter 6. I had to change the fixed frame to /odom in rviz and add an odometry visualisation
-- setup rqt_reconfigure, tried to calibrate (7.4). But it looks like I am missing a tf base_link.
-  - rosrun tf view_frames && evince frames.pdf => nothing
-    
+*** TODO does not work !! Try another docker image that runs firefox: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
+
