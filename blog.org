@@ -1,3 +1,9 @@
+* 2016-11-27
+- ev3-android: fixed connection to non-local master !
+- wifi connection is patchy, random disconnections are annoying !
+- if android is OFFLINE in adb, disable/enable debug over tcp/ip
+- tried the calibration again p43, but no luck.
+- less ~/catkin-ws/src/rbx1/rbx1_nav/nodes/calibrate_linear.py : no clue why nothing happens
 * 2016-11-23
 - compiled the project in IntelliJ, fixed 2 issues with deprecated methods
 - cannot use Android USB over NoMachine ?

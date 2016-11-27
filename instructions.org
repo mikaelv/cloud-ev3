@@ -88,12 +88,14 @@ sudo apt install nvidia-370
 cd /opt/android-sdk/tools
 export DISPLAY=:1001
 sudo ./android
-# Install version 23
+# Install version 23 and platform tools
 # Back to command line, install Ubuntu support for 32 bits libraries
 # See here: http://linuxsleuthing.blogspot.co.uk/2015/08/android-sdk-on-64-bit-linux.html
 sudo dpkg --add-architecture i386
 sudo apt-get update
 sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1
+vi ~/.profile
+# Add /opt/android-sdk/platform-tools to PATH
 #+END_SRC
 # IntelliJ: set Android SDK, set Project SDK to Android
 
