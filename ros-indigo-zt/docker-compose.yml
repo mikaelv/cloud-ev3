@@ -24,11 +24,11 @@ services:
       - "DISPLAY=:1001"
       - "ZT_NETWORK=565799d8f6f7f87f"
 # #    - "ROS_HOSTNAME=image_view"
-      - "ROS_MASTER_URI=http://ev3:11311"
+      - "ROS_MASTER_URI=http://master:11311"
   #command: rosrun image_view image_view image:=/camera/compressed
 # #  command: sudo zerotier-cli join 565799d8f6f7f87f    
   #  command: bash -c "sudo service zerotier-one start && sudo zerotier-cli join 565799d8f6f7f87f && bash"
-    command: bash -c "rostopic list && bash"
+    command: roscore -v
 #  command: bash
   #command: roscore
   #command: rostopic list
