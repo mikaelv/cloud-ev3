@@ -1,9 +1,19 @@
+* 2016-12-06
+- used adb to see the logs when the app crashes. There is a missing class from dnsjava: java.lang.NoClassDefFoundError: Failed resolution of: Lorg/xbill/DNS/Address;
+- started to migrate to gradle. Installed gradle in /opt. The default version with apt-get is very old
+- gradle is very picky w.r.t. SDK version. It complained that I did not accept the license for version X when I specified X.0 in the build.gradle and I installed X.1
+- fiddling with gradle multi-modules, can't make it compile. Next step: merge everything in one module and avoid the pain !
 * 2016-12-04
 - tried to echo /cmd_vel using ros_teleop. It does NOT work if I run the teleop docker container without --name... 
   ROS is very picky about hostnames, and docker run generates a new hostname every time.
-- improved ros-teleop/run.sh: 3 containers with a rostopic echo. 
+- improved ros-teleop/run.sh: 3 containers with a rostopic echo. rostopic echo must be run AFTER the topic is created
   Unfortunately it seems I cannot use the arrow keys in a windows terminal with docker attach. But it works with docker run.
   It could be related to https://github.com/docker/docker/issues/13817
+- setting the DNS on the Android wifi is a pain, I need to find a better solution.
+  The App could have another setting for the DNS, or use zeroconf. Does zeroconf work with zerotier and docker ?
+  Another option would be to use a public dns: dyndns or noip. Or maybe just set the master using a zerotier IP address ?
+- tried to teleop with android connecting to the docker master, but the android app crashes. It even rebooted the OS.
+  next step: make the teleop work, debug the android app
 
 * 2016-11-27
 - ev3-android: fixed connection to non-local master !
