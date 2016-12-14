@@ -1,3 +1,11 @@
+* 2016-12-13
+- resolved runtime issue with apache commons codec: use transitive=true for httpclient
+- the App runs and can connect to the master node !!
+* 2016-12-12
+- trying to recompile the project
+- jar hell: added transitive = false and resolved warnings one by one, by adding missing dependencies and by adding directives to proguard.
+* 2016-12-09
+- moved everything to one project, tried to make the project compile
 * 2016-12-06
 - used adb to see the logs when the app crashes. There is a missing class from dnsjava: java.lang.NoClassDefFoundError: Failed resolution of: Lorg/xbill/DNS/Address;
 - started to migrate to gradle. Installed gradle in /opt. The default version with apt-get is very old
