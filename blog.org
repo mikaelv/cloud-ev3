@@ -1,3 +1,33 @@
+* 2017-01-04
+- installed H4R EV3, managed to SSH to the EV3 brick
+- the EV3 brick does not work with an apple keyboard, you need a pc keyboard
+- ordered a wifi dongle. Cannot use the Wifi AND the USB ethernet at the same time
+- improved the ros-indigo-zt/docker-compose.yml to create a rosnet network with macvlan
+- the ev3dev can ping the docker container
+- ran ev3_manager and ir.launch on the ev3, but got an error :
+roslaunch ./ev3_ir.launch ev3_hostname:=192.168.10.123
+[WARN] [WallTime: 1455389457.181423] Controller Spawner couldn't find the expected controller_manager ROS interface.
+- ran ir.launch on the docker container, but got:
+ERROR: cannot launch node of type [controller_manager/spawner]: controller_manager
+
+* 2017-01-02
+- tried to investigate why rostopic echo does not do anything
+- added log information, stuff is published but does not appear in the master node
+- I am tempted to give up with the android solution and use this instead: http://hacks4ros.github.io/h4r_ev3_ctrl/
+* 2016-12-20
+** Network connectivity check
+Network connectivity is OK between Android and the docker machine. 
+Tried with "nc -l -p 1234" on the Docker machine and with "curl http://masterleakimav.hopto.org:1234" on Android.
+For some reason "echo hello|nc masterleakimav.hopto.org 1234" says "bad address".
+On stackoverflow, people say that you need busybox for this to work with DNS.
+* 2016-12-19
+- tried to run the ros-teleop docker container, did not work
+- rostopic echo /voltage does not work
+- set up 3 noip addresses: one for ev3, one for master, one for node1. Associated them with the ZeroTier IP addresses
+- set dns = 8.8.8.8 and dns_search = hopto.org in docker-compose.yml
+- all nodes can now ping each other using a hostname
+- but rostopic echo /voltage still does not work
+- next step: use android debug to see what is going on. Would be nice to have some logs/self check in the app itself ?
 * 2016-12-13
 - resolved runtime issue with apache commons codec: use transitive=true for httpclient
 - the App runs and can connect to the master node !!

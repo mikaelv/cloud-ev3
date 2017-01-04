@@ -4,13 +4,16 @@ services:
     extends:
       file: "../ros-indigo-zt/docker-compose.yml"
       service: master
+    hostname: masterleakimav
+    dns_search: hopto.org
 
   teleop:
     extends:
       file: "../ros-indigo-zt/docker-compose.yml"
       service: master
     container_name: teleop
-    hostname: teleop
+    hostname: node1leakimav
+    dns_search: hopto.org
     volumes:
       - /home/ubuntu/docker-volumes/node1/zerotier-one:/var/lib/zerotier-one 
     command: bash -c "(rostopic list) && (rosrun topic_tools relay /turtle1/cmd_vel /cmd_vel) & (rosrun turtlesim turtle_teleop_key)"

@@ -5,10 +5,13 @@ services:
   # image: toddsampson/ros-indigo-image_pipeline
     image: ros-indigo-zt
     container_name: master
-    network_mode: rosnet
     # TODO change in host's /etc/resolv.conf and remove this property 
-    dns: 52.51.247.240 
-    hostname: master
+    dns: 8.8.8.8
+    networks:
+      rosnet:
+        ipv4_address: 192.168.10.2
+#    dns: 52.51.247.240 
+#    hostname: master
   #name: image_view
   #volumes_from:
   #- "rosmaster"
@@ -32,3 +35,13 @@ services:
 #  command: bash
   #command: roscore
   #command: rostopic list
+
+networks:
+  rosnet:
+    driver: macvlan
+    driver_opts:
+      parent: enp0s20u1  
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1  
