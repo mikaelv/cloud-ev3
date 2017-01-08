@@ -1,14 +1,46 @@
+* 2017-01-08
+** Teleop works !!
+#+BEGIN_SRC bash
+# on ev3
+vi /etc hosts
+# add master and ev3_launch ips
+ev3_manager
+
+# on host
+docker-compose up -d master ev3_launch
+docker exec -t ev3_launch bash
+rosrun topic_tools relay /cmd_vel /ev3dev/diffDrv/cmd_vel &
+sudo apt-get install ros-indigo-teleop-twist-keyboard
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+#+END_SRC
+* 2017-01-07
+- It appears that linux network bridging does not work with Wifi cards. 
+  There is a solution with ebtables https://wiki.debian.org/BridgeNetworkConnections#Bridging_with_a_wireless_NIC but it is quite involved.
+- the easiest will be to plug the laptop with an ethernet cable - or use the iMac remotely and launch docker containers from there.
+- set up my old friend the Linksys WRT54 as an Access point, plugged on the powerline - Wifi in the living room now works like a charm
+  
+* 2017-01-05
+** got the USB Wifi dongle
+It was quite fiddly to make it work:
+- the connection to the iMac shared connection seemed to work, but impossible to find the allocated IP
+- then I switched to the Virgin Media router, but it was appearing as still having 192.168.10.123 instead of 192.168.0.x
+- forced a pre-allocation in DHCP settings, now it appears with both addresses but at least I can ssh to it via Wifi
+- now I can ssh to ev3dev.local (zero conf works !), but the docker container cannot see the rest of the wifi network !? 
+  it was working yesterday with the USB ethernet
 * 2017-01-04
+** Another approach: H4R EV3 - linux on the EV3 brick
 - installed H4R EV3, managed to SSH to the EV3 brick
 - the EV3 brick does not work with an apple keyboard, you need a pc keyboard
-- ordered a wifi dongle. Cannot use the Wifi AND the USB ethernet at the same time
+- ordered a wifi dongle. Cannot use the Wifi AND the USB ethernet at the same time - something to do with the default interface
 - improved the ros-indigo-zt/docker-compose.yml to create a rosnet network with macvlan
 - the ev3dev can ping the docker container
 - ran ev3_manager and ir.launch on the ev3, but got an error :
 roslaunch ./ev3_ir.launch ev3_hostname:=192.168.10.123
 [WARN] [WallTime: 1455389457.181423] Controller Spawner couldn't find the expected controller_manager ROS interface.
-- ran ir.launch on the docker container, but got:
-ERROR: cannot launch node of type [controller_manager/spawner]: controller_manager
+- ran ir.launch on the docker container, got the same error after having installed controller_manager
+- added master in /etc/hosts on ev3dev, and added ev3dev in /etc/hosts on master
+- Now I get the ir topics !!!
+- Next time: change the rosnet in docker-compose to add ev3dev
 
 * 2017-01-02
 - tried to investigate why rostopic echo does not do anything

@@ -15,7 +15,8 @@ libopencv-dev python-opencv ros-indigo-vision-opencv \
 ros-indigo-depthimage-to-laserscan ros-indigo-arbotix-* \
 ros-indigo-turtlebot-teleop ros-indigo-move-base \
 ros-indigo-map-server ros-indigo-fake-localization \
-ros-indigo-amcl ros-indigo-rqt-reconfigure git subversion mercurial
+ros-indigo-amcl ros-indigo-rqt-reconfigure git subversion mercurial \
+ros-indigo-controller-manager
 
 RUN mkdir -p ~/catkin-ws/src
 RUN git clone https://github.com/pirobot/rbx1.git ~/catkin-ws/src/rbx1
@@ -23,3 +24,5 @@ RUN cd ~/catkin-ws/src/rbx1 && git checkout indigo-devel
 RUN bash -c "source /ros_entrypoint.sh && cd ~/catkin-ws && catkin_make"
 RUN bash -c "source ~/catkin-ws/devel/setup.bash && cd ~/catkin-ws && rospack profile"
 RUN echo "source ~/catkin-ws/devel/setup.bash" | tee >> ~/.bashrc
+
+COPY ./ev3_launch /home/ros/catkin-ws/src/ev3_launch

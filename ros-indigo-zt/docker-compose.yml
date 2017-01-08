@@ -9,7 +9,7 @@ services:
     dns: 8.8.8.8
     networks:
       rosnet:
-        ipv4_address: 192.168.10.2
+        ipv4_address: 192.168.0.100
 #    dns: 52.51.247.240 
 #    hostname: master
   #name: image_view
@@ -40,8 +40,8 @@ networks:
   rosnet:
     driver: macvlan
     driver_opts:
-      parent: enp0s20u1  
+      parent: wlp4s0  
     ipam:
       config:
-        - subnet: 192.168.10.0/24
-          gateway: 192.168.10.1  
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1  

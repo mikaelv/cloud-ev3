@@ -1,3 +1,4 @@
 docker build -t ros-by-example .
-#docker-compose up -d master 
-docker-compose run --rm --name master master bash 
+docker-compose up -d  master ev3_launch
+#docker-compose run --rm --name ev3_launch ev3_launch
+

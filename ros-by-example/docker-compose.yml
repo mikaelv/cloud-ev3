@@ -1,25 +1,38 @@
 version: '2'
 services:
   master:
-    image: ros-by-example
-    container_name: master
-    hostname: master
-    network_mode: rosnet
-    # TODO change in host's /etc/resolv.conf and remove this property 
-    dns: 52.51.247.240 
-    devices:
-      - /dev/net/tun
-    cap_add:
-      - NET_ADMIN
-      - SYS_ADMIN       
-    volumes:
-      - "/tmp/.X11-unix:/tmp/.X11-unix"
-      - /home/ubuntu/docker-volumes/master/zerotier-one:/var/lib/zerotier-one 
-    environment:
-      - "DISPLAY=:1001"
-      - "QT_X11_NO_MITSHM=1"
-      - "ZT_NETWORK=565799d8f6f7f87f"
-#      - "ROS_MASTER_URI=http://ev3:11311"
-      - "ROS_MASTER_URI=http://master:11311"
-    command: bash
+    extends:
+      file: "../ros-indigo-zt/docker-compose.yml"
+      service: master
+    extra_hosts:
+      - "ev3dev:192.168.0.12"
 
+
+  ev3_launch:
+    networks:
+      rosnet:
+        ipv4_address: 192.168.0.102
+    extends:
+      file: "../ros-indigo-zt/docker-compose.yml"
+      service: master
+    image: ros-by-example
+    container_name: ev3_launch
+    hostname: ev3_launch
+    volumes:
+      - /home/ubuntu/docker-volumes/node1/zerotier-one:/var/lib/zerotier-one 
+    working_dir: /home/ros/catkin-ws/src/ev3_launch/launch
+#    command: bash
+    command: roslaunch ./motors.launch ev3_hostname:=ev3dev
+    extra_hosts:
+      - "ev3dev:192.168.0.12"
+
+# TODO can we use extend for networks to avoid duplication ?
+networks:
+  rosnet:
+    driver: macvlan
+    driver_opts:
+      parent: enp0s25
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1
