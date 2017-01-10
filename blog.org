@@ -1,3 +1,7 @@
+* 2017-01-10
+- enabled ir proximity
+- looked into the H4R code. It uses http://wiki.ros.org/ros_control
+- I can find the IR YAML parameters by looking at https://github.com/Hacks4ROS/h4r_ev3_ctrl/blob/6a389638a0847b03e0fe97e9f0f5530d12af22a4/h4r_ev3_control/src/h4r_ev3_control/ev3_infrared_controller.cpp
 * 2017-01-08
 ** Teleop works !!
 #+BEGIN_SRC bash

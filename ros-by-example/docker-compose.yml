@@ -22,7 +22,7 @@ services:
       - /home/ubuntu/docker-volumes/node1/zerotier-one:/var/lib/zerotier-one 
     working_dir: /home/ros/catkin-ws/src/ev3_launch/launch
 #    command: bash
-    command: roslaunch ./motors.launch ev3_hostname:=ev3dev
+    command: bash -c "roslaunch ./ir.launch ev3_hostname:=ev3dev & roslaunch ./motors.launch ev3_hostname:=ev3dev"
     extra_hosts:
       - "ev3dev:192.168.0.12"
 
