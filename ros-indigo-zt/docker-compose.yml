@@ -24,7 +24,8 @@ services:
       - "/tmp/.X11-unix:/tmp/.X11-unix"
       - /home/ubuntu/docker-volumes/master/zerotier-one:/var/lib/zerotier-one 
     environment:
-      - "DISPLAY=:1001"
+      - "DISPLAY=:0"
+      - "QT_X11_NO_MITSHM=1"
       - "ZT_NETWORK=565799d8f6f7f87f"
 # #    - "ROS_HOSTNAME=image_view"
       - "ROS_MASTER_URI=http://master:11311"

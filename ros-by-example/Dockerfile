@@ -16,7 +16,8 @@ ros-indigo-depthimage-to-laserscan ros-indigo-arbotix-* \
 ros-indigo-turtlebot-teleop ros-indigo-move-base \
 ros-indigo-map-server ros-indigo-fake-localization \
 ros-indigo-amcl ros-indigo-rqt-reconfigure git subversion mercurial \
-ros-indigo-controller-manager
+ros-indigo-controller-manager 
+#ros-indigo-teleop-twist-keyboard
 
 RUN mkdir -p ~/catkin-ws/src
 RUN git clone https://github.com/pirobot/rbx1.git ~/catkin-ws/src/rbx1

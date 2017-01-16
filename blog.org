@@ -1,7 +1,49 @@
+* 2017-01-16
+- installed patch https://github.com/Hacks4ROS/h4r_ev3_ctrl/releases
+- it solved the issue, I can now calibrate the angular motion.  
+* 2017-01-15
+- the robot moves without any command as soon as the motor controller is started
+- spent 3 hours figuring out why. It turns out I added 1 whitespace to motor.yaml/min_acceleration !!!!
+- it looks like there is a bug in this setting. If I set it to 0 I have similar issues when calibrating.
+- note for later: commit things as soon as they work, revert if things are broken
+- linear calibration: multiply wheel_radius by odom_linear_scale_correction
+- angular calibration: reducing the wheel_separation slows down the rotations tremendously. 
+  Increasing it trieggers an infinite rotation. 
+- the only way to have few movements with angular_calibration is to put an angle of 2.
+- rostopic echo /odom during a teleop shows that the z position barely changes
+- rostopic echo /ev3dev/joint_states during a teleop shows that the position/velocities are positive for both motors.
+  should one of them be negative ?
+- debug motor states:
+#+BEGIN_SRC bash
+cd /sys/class/tacho-motor/motor1
+watch -n 0.2 cat position
+watch -n 0.2 cat polarity
+#+END_SRC
+* 2017-01-14
+** Research a low cost slam sensor
+- $100 Intel R200: requires powerful USB 3 board
+- $150 LidarLight v2 with DIY motors: http://grauonline.de/wordpress/?page_id=1233
+- $25 Hacked tUni-T UT390b telemeter: http://www.instructables.com/id/Simple-LiDAR-using-the-laser-rangefinder-Uni-T-UT3/
+** Calibration
+- Ros by example p. 65
+#+BEGIN_SRC bash
+docker exec -it ev3_launch bash
+rosrun rqt_reconfigure rqt_reconfigure &
+rosrun rbx1_nav calibrate_linear.py
+rosrun rbx1_nav calibrate_angular.py
+#+END_SRC
+- Result: odom_linear_scale_correction should be 0.1092
+- But no way to specify it in diffDrv
+- Changed wheel_separation and wheel_radius, got better results with faster motion !
+
 * 2017-01-10
 - enabled ir proximity
 - looked into the H4R code. It uses http://wiki.ros.org/ros_control
 - I can find the IR YAML parameters by looking at https://github.com/Hacks4ROS/h4r_ev3_ctrl/blob/6a389638a0847b03e0fe97e9f0f5530d12af22a4/h4r_ev3_control/src/h4r_ev3_control/ev3_infrared_controller.cpp
+- the diffDrive parameters are described here: http://wiki.ros.org/diff_drive_controller
+- tried to use remap to change the topic names for diffDrv, with no luck. It is actually a known issue: https://github.com/ros-controls/ros_controllers/issues/126
+- discovered some nice scripts on the ev3 in /usr/local/bin : I can activate all ports from there
+- next time: use relay in the launch file and try to calibrate
 * 2017-01-08
 ** Teleop works !!
 #+BEGIN_SRC bash
