@@ -10,6 +10,8 @@ services:
     networks:
       rosnet:
         ipv4_address: 192.168.0.100
+    extra_hosts:
+      - "ev3dev:192.168.0.12"
 #    dns: 52.51.247.240 
 #    hostname: master
   #name: image_view

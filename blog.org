@@ -1,3 +1,27 @@
+* 2017-01-22
+** Square using odom
+- robot can do squares:  rosrun rbx1_nav odom_out_and_back.py
+- but the result is not as good as in the book. However rviz display is quite close to reality
+- accuracy could probably be improved with a Gyro sensor
+** Square using move_base
+- p 119
+- setup rviz in the ros_by_example image so that I can use nav.rviz
+#+BEGIN_SRC bash
+docker-compose up rviz
+run.sh
+docker exec -it ev3_launch bash
+roscd rbx1_nav/config/turtlebot
+vi global_costmap_params.yaml
+# change base_footprint to base_link
+vi local_costmap_params.yaml
+# change base_footprint to base_link
+roslaunch rbx1_nav tb_move_base_blank_map.launch &
+rosrun rbx1_nav move_base_square.py
+#+END_SRC
+- the robot arrived less than 10cm away from its original position !
+- but the rviz run from docker-compose does not load nav.rviz - TODO fix for next time, it runs fine in a shell
+- I can set goals to the robot, and it executes them !!
+
 * 2017-01-16
 - installed patch https://github.com/Hacks4ROS/h4r_ev3_ctrl/releases
 - it solved the issue, I can now calibrate the angular motion.  
