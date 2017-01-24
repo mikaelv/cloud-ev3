@@ -1,3 +1,19 @@
+* 2017-01-24
+- created a docker image for lsd-slam https://github.com/tum-vision/lsd_slam
+- the quickstart works, but is quite slow
+- next time: try to use the Nvidia extensions for docker
+* 2017-01-23
+- trying to find how to do SLAM using a stereo camera
+- LSD SLAM is great: https://github.com/tum-vision/lsd_slam but monocular only, 
+  and does not publish live point clouds (see at the bottom of the page)
+- Stereo LSD SLAM seems awesome, but no code ? https://github.com/tum-vision/lsd_slam/issues/153
+- This looks alright: http://wiki.ros.org/rtabmap_ros/Tutorials/StereoOutdoorMapping
+- This looks cool too: https://github.com/srv/stereo_slam
+- other option: Poor man's lidar using the IR sensor and a servo: http://www.pirobot.org/blog/0014/
+- Kinect equivalent: https://orbbec3d.com/product-astra/
+- Cheap stereo webcam: https://www.amazon.co.uk/Konig-3D-3MP-Webcam-Glasses/dp/B004CRYEO0/ref=sr_1_1?ie=UTF8&qid=1485244797&sr=8-1&keywords=3d+webcam
+- Lego pi camera mount: http://www.mindsensors.com/rpi/157-camera-mount-for-pistorms
+- Raspberry driver for stereo camera: http://www.linux-projects.org/documentation/uv4l-raspicam/
 * 2017-01-22
 ** Square using odom
 - robot can do squares:  rosrun rbx1_nav odom_out_and_back.py

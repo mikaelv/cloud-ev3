@@ -1,0 +1,35 @@
+version: '2'
+services:
+  master:
+    extends:
+      file: "../ros-indigo-zt/docker-compose.yml"
+      service: master
+    extra_hosts:
+      - "ev3dev:192.168.0.12"
+
+  lsdslam:
+    networks:
+      rosnet:
+        ipv4_address: 192.168.0.102
+    extends:
+      file: "../ros-indigo-zt/docker-compose.yml"
+      service: master
+    image: ros-lsdslam
+    container_name: lsdslam
+    hostname: lsdslam
+    volumes:
+      - /home/ubuntu/docker-volumes/node1/zerotier-one:/var/lib/zerotier-one 
+    working_dir: /home/ros/
+#    command: bash
+
+
+# TODO can we use extend for networks to avoid duplication ?
+networks:
+  rosnet:
+    driver: macvlan
+    driver_opts:
+      parent: enp0s25
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1
