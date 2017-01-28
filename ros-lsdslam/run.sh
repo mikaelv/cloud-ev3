@@ -1,3 +1,3 @@
-docker build -t ros-lsdslam .
-docker-compose up -d 
+nvidia-docker build -t ros-lsdslam .
+nvidia-docker-compose up -d 
 

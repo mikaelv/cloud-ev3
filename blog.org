@@ -1,9 +1,43 @@
+* 2017-01-26
+- got the lsdlam working !! But the result is rather poor. I need to calibrate my camera
+- this should help: http://www.icg.tugraz.at/courses/ARVU/install.pdf
+- For some reason I cannot create a docker-compose which starts everything. 
+  The lsd_slam packages cannot be found when run with docker-compose, 
+  but can be found when running exec -it bash
+* 2017-01-25
+- Tried to setup bumblebee: https://lenovolinux.blogspot.co.uk/2016/05/bumblebee-on-lenovo-t440p-nvidia-gt.html
+- got a black screen in the end, reverted
+- compiled the opengl branch of nvidia-docker, ran glxgears in docker
+#+BEGIN_SRC bash
+git clone https://github.com/NVIDIA/nvidia-docker.git
+cd nvidia-docker/
+make deb
+cd tools/dist
+sudo dpkg -i nvidia-docker_1.0.0-1_amd64.deb 
+xhost +
+nvidia-docker run -it -v /tmp/.X11-unix:/tmp/.X11-unix nvidia/cuda bash
+apt update
+apt install mesa-utils
+glxgears
+#+END_SRC
+- tried to update the lsdlam image with the last 4 lines of https://gitlab.com/nvidia/cuda/blob/ubuntu16.04/8.0/runtime/Dockerfile, did not work
+- next time: try to rebuild a OpenGL image from ubuntu 14.04
+* 2017-01-24
+- installed NVIDIA drivers: Ubuntu -> Additional drivers
+- installed nvidia-docker: https://github.com/NVIDIA/nvidia-docker/wiki#quick-start
+- installed nvidia-docker-compose: https://github.com/eywalker/nvidia-docker-compose
+- ran the lsdslam image, got errors
+- nvidia-docker does not support OpenGL: https://github.com/NVIDIA/nvidia-docker/issues/11
+- tried this: https://github.com/thewtex/docker-opengl  
+  good way of distributing a noob proof docker image 
+  but the glxgears only ran with 1200 fps - got 10000 fps when directly on ubuntu
+- glmark2 score: 1197 for ubuntu native with nouveau driver
 * 2017-01-24
 - created a docker image for lsd-slam https://github.com/tum-vision/lsd_slam
 - the quickstart works, but is quite slow
 - next time: try to use the Nvidia extensions for docker
 * 2017-01-23
-- trying to find how to do SLAM using a stereo camera
+** How to do SLAM using cheap hardware ?
 - LSD SLAM is great: https://github.com/tum-vision/lsd_slam but monocular only, 
   and does not publish live point clouds (see at the bottom of the page)
 - Stereo LSD SLAM seems awesome, but no code ? https://github.com/tum-vision/lsd_slam/issues/153
