@@ -22,8 +22,7 @@ services:
     devices:
       - /dev/video1
     working_dir: /home/ros
-    command: bash -c "source /ros_entrypoint.sh && source ~/.bashrc && env && sudo chmod 777 /dev/video1 && roslaunch launch/usbcam.launch"
-#    command: bash -c "sudo chmod 777 /dev/video1 && roslaunch launch/usbcam.launch & rosrun lsd_slam_viewer viewer & rosrun lsd_slam_core live_slam /image:=/usb_cam/image_raw _calib:=~/rosbuild_ws/package_dir/lsd_slam/lsd_slam_core/calib/FOV_examle_calib.cfg"
+    command: bash -i -c "sudo chmod 777 /dev/video1 && roslaunch launch/usbcam.launch & rosrun lsd_slam_viewer viewer & rosrun lsd_slam_core live_slam /image:=/usb_cam/image_raw _calib:=FOV_examle_calib.cfg"
 #    command: bash
 
 

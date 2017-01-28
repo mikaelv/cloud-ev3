@@ -1,9 +1,8 @@
 * 2017-01-26
 - got the lsdlam working !! But the result is rather poor. I need to calibrate my camera
 - this should help: http://www.icg.tugraz.at/courses/ARVU/install.pdf
-- For some reason I cannot create a docker-compose which starts everything. 
-  The lsd_slam packages cannot be found when run with docker-compose, 
-  but can be found when running exec -it bash
+- struggled to run the lsd packages from docker-compose. 
+  The issue was that I was missing -i in the command section, hence .bashrc was not run
 * 2017-01-25
 - Tried to setup bumblebee: https://lenovolinux.blogspot.co.uk/2016/05/bumblebee-on-lenovo-t440p-nvidia-gt.html
 - got a black screen in the end, reverted
