@@ -1,3 +1,49 @@
+* 2017-01-31
+** LSD SLAM after calibration
+#+BEGIN_SRC bash
+rosrun camera_calibration cameracalibrator.py --size 11x7 --square 0.01 image:=/usb_cam/image_raw camera:=/usb_cam
+# move around the chessboard, calibrate, commit
+rosrun lsd_slam_core live_slam /image:=/usb_cam/image_raw /camera_info:=/usb_cam/camera_info
+# Received ROS Camera Calibration: fx: 533.319824, fy: 534.331848, cx: 304.340820, cy: 239.917526 @ 640x480
+#+END_SRC
+Result: got a very messy point cloud, where we could recognize some shapes. 
+There is very little chance this could be useful for SLAM.
+I'm starting to accept that there won't be a cheap solution for SLAM.
+** PS3 Eye on the EV3
+- tried to plug the camera on the EV3 brick via a USB Hub
+- usb_cam is not installed, but gscam is
+- tried http://wiki.ros.org/gscam#Running but got this error:
+(gst-plugin-scanner:416): GLib-GObject-WARNING **: cannot register existing type 'GstVorbisDec'
+
+(gst-plugin-scanner:416): GLib-CRITICAL **: g_once_init_leave: assertion 'result != 0' failed
+
+(gst-plugin-scanner:416): GStreamer-CRITICAL **: gst_element_register: assertion 'g_type_is_a (type, GST_TYPE_ELEMENT)' 
+- lsusb shows the camera
+- /dev/video0 is not created. Tried to follow instructions here: https://github.com/ev3dev/ev3dev/issues/64
+- "v4l2-ctl  --list-devices" does not show anything
+- this webcam is probably not supported. It could also be caused by this specific ev3dev installation
+* 2017-01-30
+** Computer vision
+http://robotics.stackexchange.com/questions/7014/what-main-factors-features-explain-the-high-price-of-most-industrial-computer-vi
+** Calibrate using camera_calibration
+- Follow http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration
+- print https://github.com/ethz-asl/ethzasl_ptam/blob/master/ptam/calib_pattern.pdf
+#+BEGIN_SRC bash
+rosrun camera_calibration cameracalibrator.py --size 11x7 --square 0.01 image:=/usb_cam/image_raw camera:=/usb_cam
+#+END_SRC
+- then use image_proc ? http://wiki.ros.org/image_proc
+* 2017-01-27
+** Calibrate the camera
+- follow this: http://wiki.ros.org/ethzasl_ptam/Tutorials/camera_calibration
+- print https://github.com/ethz-asl/ethzasl_ptam/blob/master/ptam/calib_pattern.pdf
+#+BEGIN_SRC bash
+vi ~/catkin_ws/src/ethzasl_ptam/ptam/PtamFixParams.yaml
+# Change webcam resolution
+vi ~/catkin_ws/src/ethzasl_ptam/ptam/launch/cameracalibrator.launch
+# Change topic name usb_cam/image_raw
+roslaunch ptam cameracalibrator.launch
+
+#+END_SRC
 * 2017-01-26
 - got the lsdlam working !! But the result is rather poor. I need to calibrate my camera
 - this should help: http://www.icg.tugraz.at/courses/ARVU/install.pdf

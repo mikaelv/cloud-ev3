@@ -29,7 +29,7 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 COPY ./launch /home/ros/launch
 
 # PTAM camera calibration
-RUN sudo apt-get -y install ros-indigo-tf
+RUN sudo apt-get -y install ros-indigo-tf ros-indigo-rqt-gui-cpp
 RUN mkdir -p ~/catkin_ws/src 
 RUN cd ~/catkin_ws/src && git clone https://github.com/ethz-asl/ethzasl_ptam
-RUN bash -c "cd ~/catkin_ws && source /ros_entrypoint.sh && catkin_make || true"
+RUN bash -c "cd ~/catkin_ws && source /ros_entrypoint.sh && catkin_make"
