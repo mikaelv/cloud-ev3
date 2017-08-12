@@ -1,3 +1,260 @@
+* 2017-08-12
+** Route from laptop to ev3dev
+- on z83:
+#+BEGIN_SRC bash
+sudo iptables -A FORWARD -o enp0s20u1u1 -i wlx74da388bd929 -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -o wlx74da388bd929 -j MASQUERADE
+- on ev3dev: add asterix to /etc/hosts
+- on asterix: add ev3dev to /etc/hosts
+#+END_SRC
+** Update
+- ran robot and rviz, got some good laser scans, but the wifi fails intermittently
+- it might be due to the wifi range, it looks like the communication is better when the robot is close to the AP
+- next time: use Linksys router, plug laptop
+* 2017-08-05
+** Enable internet access on ev3dev
+- this solves the date synchronization issue
+- on ev3dev: changed /usr/local/bin/gadget_on to specify gateway and nameservers
+- on z83:
+#+BEGIN_SRC bash
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo iptables -t nat -A POSTROUTING -o wlx74da388bd929 -j MASQUERADE
+sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+sudo  iptables -A FORWARD -i enp0s20u1u1 -o wlx74da388bd929 -j ACCEPT
+#+END_SRC
+- TODO: save routing config for next reboot
+
+** Startup procedure
+- start z83
+- ssh z83
+- start ev3dev (the USB port must be active for the ev3_gadget service to start)
+- sudo ip addr add 192.168.10.120/24 dev enp0s20u1u1
+- ssh root@ev3dev
+- ev3_manager
+- open new terminal
+- ssh z83
+- cd projects/rosev3
+- ./startall.sh
+- open new terminal
+- rosrun rviz rviz &
+- change fixed frame to map
+- add Map visualization, change topic to /map
+
+** Progress 
+- debug tf: rosrun tf view_frames && evince frames.pdf
+- missing transform base_link -> odom
+- stop r200
+- rosrun tf tf_echo /base_link /odom => ok on z83, but not on asterix !?
+- could it be because of a communication issue between asterix and ev3dev ?
+- TODO for next time: try to add routing in z83 to forward packets from asterix, and add entries in /etc/hosts on both sides
+- disabled possible Wifi driver that causes an issue: https://askubuntu.com/questions/896212/wifi-unstable-with-edimax-ew-7811un
+#+BEGIN_SRC bash
+sudo vim /etc/modprobe.d/blacklist.conf
+blacklist rtl8192cu
+#+END_SRC
+
+* 2017-06-28
+** Z83
+- /etc/modprobe.d/blacklist.conf 
+blacklist brcmfmac
+- sync the clock on ev3: change /etc/ntp.conf 
+#+BEGIN_SRC 
+
+#+END_SRC
+- automate the startup steps
+** ev3dev setup
+- Put this in /lib/systemd/system/ev3_manager.service
+#+BEGIN_SRC bash
+# TODO !!!
+
+#+END_SRC
+* 2017-06-04
+- received USB 3 Hub
+- connected EV3 brick to Z83 using USB cable
+- got teleop working !
+- the wifi on z83 is very unstable though, the connection drops frequently. Maybe disconnecting other computers could help
+** EV3DEV setup
+- Put this in /usr/local/bin/gadget_on
+#+BEGIN_SRC 
+#!/bin/bash
+PATH=/usr/bin:/bin
+gadget_interface=`connmanctl services | grep -oh "gadget_[a-z0-9]*_usb"`
+if [ "$?" != "0" ]; then echo -e "Could not find gadget!\n USB Cable Connected?\n"; exit 1; fi
+    
+connmanctl enable gadget || true
+connmanctl disconnect $gadget_interface
+
+connmanctl config $gadget_interface --ipv4 manual 192.168.10.123 255.255.255.0 192.168.10.120 --nameservers 8.8.8.8
+if [ "$?" != "0" ]; then echo -e "Could not set config!"; exit 1; fi
+    
+connmanctl connect $gadget_interface
+if [ "$?" != "0" ]; then clear; echo -e "Could connect Gadget!\n"; exit 1; fi
+#+END_SRC
+
+- put this in /lib/systemd/system/ev3-gadget.service
+#+BEGIN_SRC bash
+[Unit]
+Description=LEGO MINDSTORMS EV3 USB Ethernet Gadget
+After=multi-user.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c '/usr/local/bin/gadget_on'
+ExecStop=/bin/sh -c '/usr/local/bin/gadget_off'
+#+END_SRC
+
+#+BEGIN_SRC bash
+systemctl enable ev3-gadget.service
+echo '192.168.10.120  z83' >> /etc/hosts
+ros_ip_set 192.168.10.123
+ros_master_set z83
+#+END_SRC
+
+** Z83 setup
+- the ev3 must be booted before I can setup the ip on z83
+- connect from Z83 to EV3:
+#+BEGIN_SRC bash
+sudo ip addr add 192.168.10.120/24 dev enp0s20u1u1
+sudo echo '192.168.10.123 ev3dev' >> /etc/hosts
+ssh root@ev3dev
+#+END_SRC
+
+* 2017-05-19
+** Reinstall Windows 10
+*** Resize Ubuntu partitions
+- Windows media creation tool did not work
+- Create Ubuntu Live USB stick using Ubuntu Startup Disk creator
+- Boot on Ubuntu from the USB stick
+- Resize LVM partition:
+#+BEGIN_SRC 
+sudo lvreduce -r -L-10G /dev/ubuntu-vg/root
+# Now we need to move the swap lv just after the root lv
+# Check where the Swap lv extent lie
+sudo pvdisplay --maps
+pvmove --alloc anywhere /dev/mmclbk0p3:1000-1999 /dev/mmclbk??:0-999
+#+END_SRC
+- Resize physical volume using GParted
+*** Install Windows 10
+- Create a Windows 10 USB bootable device from Ubuntu
+- Using GParted, Create a GPT partition table on the USB stick, NTFS partition with 6GB
+#+BEGIN_SRC bash
+sudo mount ~/Downloads/Win10_1703_English_x64.iso /mnt
+cd /media/mikael/238DEE6F63BCC337
+sudo cp -r /mnt/* ./
+#+END_SRC
+- Change EFI settings to boot on USB
+* 2017-05-18
+- tried to upgrade the kernel to get the i2c patch
+#+BEGIN_SRC bash
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.12-rc1/linux-headers-4.12.0-041200rc1_4.12.0-041200rc1.201705131731_all.deb
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.12-rc1/linux-headers-4.12.0-041200rc1-generic_4.12.0-041200rc1.201705131731_amd64.deb
+wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.12-rc1/linux-image-4.12.0-041200rc1-generic_4.12.0-041200rc1.201705131731_amd64.deb
+sudo dpkg -i *headers* *image*
+#+END_SRC
+- upgraded lib-firmware to get /lib/firmware/brcm/brcmfmac43430-sdio.bin
+#+BEGIN_SRC bash
+sudo apt-get upgrade lib-firmware
+#+END_SRC
+- now dmesg shows that brcmfmac is missing /lib/firmware/brcm/brcmfmac43430-sdio.txt
+- internet says I should get it in /sys/firmware/efi/efivars/nvram-*, but I don't have such file
+- the Wifi dongle seems more stable when plugged in the USB3 port...
+- installed efivar, dpgk complained, ran sudo dpkg --configure -a, lots of stuff going on, but nothing has changed
+- next step: try to install Windows and see if that magic nvram file appears in EFI
+
+* 2017-05-07
+- installed Ubuntu using the "Startup disk creator" in Ubuntu to make the USB stick
+- Linux is installed, but Wifi does not work
+- checked lspci, lsusb, no Wireless card appears.
+- found a similar stack trace in /var/log/syslog: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1625440
+- this guy seems to provide patches: http://www.linuxium.com.au/how-tos/runningubuntuontheintelcomputestick
+- It looks like the Wifi driver will soon be included in Linux kernel: http://linuxiumcomau.blogspot.com/2017/04/rtl8723bs-wifi-soon-to-hit-mainline.html and https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1581711
+- in the meantime, I'll use the Wifi dongle
+- set up ssh:
+#+BEGIN_SRC bash
+sudo apt install openssh-server
+#+END_SRC
+- Set up wifi, Network Manager / Edit Connection. Select your connection, click Edit and check "Available to all users".
+- Set text mode https://askubuntu.com/questions/16371/how-do-i-disable-x-at-boot-time-so-that-the-system-boots-in-text-mode
+- install ros:
+#+BEGIN_SRC bash
+sudo apt-get install ros-kinetic-ros-base
+sudo apt-get -y install ros-kinetic-librealsense
+sudo apt-get -y install ros-kinetic-realsense-camera
+sudo apt-get -y install ros-kinetic-depthimage-to-laserscan
+sudo apt-get -y install ros-kinetic-gmapping
+
+echo 'source /opt/ros/kinetic/setup.sh' >> ~/.bashrc
+
+#+END_SRC
+* 2017-05-06
+- Tried to install linux on the Z83 S
+- cannot boot on the Micro SD, requires a card reader
+- accidentally destroyed the Windows partition table, tried to rescue with System Rescue CD with TestDisk
+- SystemRescueCD wouldn't boot because of the EFI, I had to follow this to make a bootable USB: https://askubuntu.com/questions/395879/how-to-create-uefi-only-bootable-usb-live-media
+* 2017-04-19
+- SLAM works !!
+- now I need to configure move_base to set goals http://wiki.ros.org/navigation/Tutorials/RobotSetup
+- I may need amcl if I want to use a saved map. http://answers.ros.org/question/67567/is-amcl-necessary-for-exploration-if-gmapping-is-already-running/
+- I need to tweak the static tf transform, when I look at the point cloud my foot is under the ground !
+- It would be nice to have a single run.sh script, including the startup of ev3_manager on the ev3
+* 2017-04-18
+- setup launch file for gmapping
+- useful command to view tf transformations:
+#+BEGIN_SRC bash
+rosrun tf tf_echo /map /odom
+#+END_SRC
+- TF visualization in RViz is very useful
+- In the documentation, base_link -> odom means 'odom is the PARENT of base_link'
+- I think I need to add the following transform:
+#+BEGIN_SRC bash
+rosrun tf static_transform_publisher 0.0 0.0 0.1 0.0 0.0 0.0 base_link camera_link 1000
+#+END_SRC
+* 2017-04-17
+** R200 in docker
+Found out why the camera was not detected in Docker:
+- this was due to /dev/video* not accessible to ros user !!!
+- maybe I should delete that ros user ? 
+- What is the point of having a separate user? Maybe for X window ?
+** rtabmap_ros
+- tried this tutorial: http://wiki.ros.org/rtabmap_ros/Tutorials/HandHeldMapping
+- did not get what that means: "To get registration without empty lines" ?
+- looked promising, got some portion of a map, but it loses the odometry very quickly, as soon as it does not face a close wall
+** depthimage_to_laserscan
+- need to remap the topic. Otherwise looks good in RViz !
+#+BEGIN_SRC bash
+rosrun depthimage_to_laserscan depthimage_to_laserscan image:=/camera/depth/image_raw
+#+END_SRC
+* 2017-04-16
+Trying to get the R200 to work in docker.
+- dmesg on the host shows it is connected
+- VLC in capture mode on /dev/video1, 2 3 shows the camera 
+BUT the ros node in docker cannot find the camera
+- tried to disable the build-in camera, same
+- installed ros kinetic and ran directly on the host => works fine !!
+#+BEGIN_SRC bash
+rosrun rviz rviz &
+roslaunch realsense_camera r200_nodelet_default.launch
+#+END_SRC
+- to get the point cloud, run
+#+BEGIN_SRC bash
+roslaunch realsense_camera r200_nodelet_rgbd.launch
+
+#+END_SRC
+** Laptop webcam
+- add devices /dev/video0 in docker-compose.yaml
+- in a ros docker container:
+#+BEGIN_SRC bash
+sudo chmod go+rw /dev/video0 && rosrun usb_cam usb_cam_node _video_device:=/dev/video0
+#+END_SRC
+- rviz can visualize /usb_cam/image_raw
+* 2017-02-26
+- Found a cool blog describing ipvlan and macvlan https://hicu.be/macvlan-vs-ipvlan
+  I might be able to run the containers over wifi using ipvlan.
+- TODO try to use DHCP to simplify the network configuration. Ideally users of the docker images should not have to change any IP address
 * 2017-01-31
 ** LSD SLAM after calibration
 #+BEGIN_SRC bash
@@ -9,6 +266,7 @@ rosrun lsd_slam_core live_slam /image:=/usb_cam/image_raw /camera_info:=/usb_cam
 Result: got a very messy point cloud, where we could recognize some shapes. 
 There is very little chance this could be useful for SLAM.
 I'm starting to accept that there won't be a cheap solution for SLAM.
+- I could use an Intel R200 with this compute stick: http://www.ebay.co.uk/itm/Quad-Core-Windows-10-2GB-RAM-32GB-eMMC-WiFi-BT4-0-HDMI-Mini-PC-Compute-Stick/112271294744?_trksid=p2045573.c100642.m3226&_trkparms=aid%3D555014%26algo%3DPL.DEFAULT%26ao%3D1%26asc%3D20160706104836%26meid%3Dc5b276a53b1740fbb44b95aea5b48cdf%26pid%3D100642%26rk%3D1%26rkt%3D1%26
 ** PS3 Eye on the EV3
 - tried to plug the camera on the EV3 brick via a USB Hub
 - usb_cam is not installed, but gscam is
