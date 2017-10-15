@@ -1,11 +1,117 @@
+* 2017-10-15
+#+BEGIN_SRC bash
+sudo apt install ros-kinetic-map-server
+sudo apt install ros-kinetic-move-base
+roslaunch ev3_nav move_base_blank_map.launch
+#+END_SRC
+- changed base_footprint to base_link in config/*costmap_params.yaml
+- setting goals in rviz does not work
+#+BEGIN_SRC bash
+rostopic info /move_base_simple/goal # ok
+rostopic echo /move_base_simple/goal # nothing
+#+END_SRC
+- something dodgy with the static transform /map /odom in rviz
+- it's because the bloody Virgin router assigned a wrong IP to the laptop !!
+- after fixing the ip address, settings 2D Nav goals work !! That's good for today, let's commit and play the guitar
+** Automatic network setup on Z83
+- enabled ip forward permanently
+#+BEGIN_SRC bash
+sudo vi /etc/sysctl.conf
+# Uncomment this line:
+# net.ipv4.ip_forward=1
+#+END_SRC
+- saved ip tables:
+#+BEGIN_SRC bash
+sudo iptables -t nat -A POSTROUTING -o wlx74da388bd929 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o enp0s20u1u3 -j MASQUERADE
+sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i enp0s20u1u3 -o wlx74da388bd929 -j ACCEPT
+sudo iptables -A FORWARD -o enp0s20u1u3 -i wlx74da388bd929 -j ACCEPT
+sudo sh -c "iptables-save > /etc/iptables.rules"
+#+END_SRC
+- Added this to z83:/etc/network/interfaces:
+#+BEGIN_SRC 
+auto enp0s20u1u3 
+iface enp0s20u1u3 inet static
+  pre-up iptables-restore < /etc/iptables.rules
+address 192.168.10.120
+netmask 255.255.255.0
+#+END_SRC
+- it worked ok but I had to restart the interface for some reason:
+#+BEGIN_SRC bash
+sudo ifdown enp0s20u1u3 
+sudo ifup enp0s20u1u3 
+#+END_SRC
+* 2017-10-09
+- tried to run rosrun ev3_nav nav_square.py
+- missing PyKDL library, which does not seem to be there since ros hydro.
+- but this exists: http://wiki.ros.org/kdl_conversions
+- need to implement Rotation.Quaternion in transform_utils.py
+- this can be useful: http://wiki.ros.org/Tutorials/Quaternions
+* 2017-10-02
+- setup catkin workspace:
+#+BEGIN_SRC bash
+cd projects/rosev3
+catkin_make
+echo "source ~/projects/rosev3/devel/setup.bash" | tee >> ~/.bashrc
+
+# Now I can run things without cd'ing:
+roslaunch ev3_bringup r200.launch
+#+END_SRC
+  
+* 2017-10-01
+- wifi connection ok if laptop on ethernet
+- if not, ping ev3dev from asterix ok, but slow in the other way
+- refresh rate of camera not as fast as with ethernet
+- can build a wonky map, but the position jumps a lot. calibration issue?
+* 2017-09-30
+- ethernet link ok
+- map seems to work OK 
+- oddly, I can't visualize point cloud / laserscan when fixed frame = map. And I can't visualize map when fixed_frame = base_link
+- it looks like I am missing a tf odom -> base_link
+- probably because I cannot ping ev3dev from asterix => on asterix:
+#+BEGIN_SRC bash
+sudo ip route add 192.168.10.0/24 via 192.168.0.33 dev enp0s25
+#+END_SRC
+- with that change everything works fine !! :-)
+- the camera view changes quickly on ethernet. 
+- Next steps:
+  - check with Wifi
+  - try setting a goal on rviz and use navigation, try putting some obstacle
+  - if all of that works, it will be time to make an instructable !
+  - try to fork the turtlebot3 packages: https://github.com/ROBOTIS-GIT/turtlebot3
+* 2017-09-25
+** Setup ethernet link between Laptop <-> Z83
+- on PC:
+sudo ip addr add 192.168.1.21/24 dev enp0s25
+sudo vi /etc/hosts
+# Replace IP for z83
+- on z83:
+sudo ip addr add 192.168.1.29/24 dev enx00e04c689e10
+sudo vi /etc/hosts
+# Replace IP for asterix
+- for persistent: https://michael.mckinnon.id.au/2016/05/05/configuring-ubuntu-16-04-static-ip-address/
+
+But thinking about it, it is much easier to just plug laptop and Z83 to the powerline adapter !!
+- Advantage: no problem for routing internet traffic, especially ntp
+- plug Z83 to powerline
+- add DHCP reservation
+- change /etc/hosts on Laptop
+* 2017-09-24
+** Trying to debug wifi issues
+- edimax dongle on laptop: 35 ms ping, 2.5 Mb/s 
+- laptop wifi: 17 ms, 3 Mb/s
+- next time: try pluging an ethernet cable in the Z83. If something goes wrong, it won't be because of the Wifi
 * 2017-08-12
 ** Route from laptop to ev3dev
 - on z83:
 #+BEGIN_SRC bash
 sudo iptables -A FORWARD -o enp0s20u1u1 -i wlx74da388bd929 -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o wlx74da388bd929 -j MASQUERADE
-- on ev3dev: add asterix to /etc/hosts
-- on asterix: add ev3dev to /etc/hosts
+# on ev3dev: add asterix to /etc/hosts
+# on asterix: add ev3dev to /etc/hosts
+# on asterix:
+sudo ip route add 192.168.10.0/24 via 192.168.0.33 dev enp0s25
 #+END_SRC
 ** Update
 - ran robot and rviz, got some good laser scans, but the wifi fails intermittently
@@ -25,20 +131,53 @@ sudo  iptables -A FORWARD -i enp0s20u1u1 -o wlx74da388bd929 -j ACCEPT
 - TODO: save routing config for next reboot
 
 ** Startup procedure
-- start z83
-- ssh z83
-- start ev3dev (the USB port must be active for the ev3_gadget service to start)
-- sudo ip addr add 192.168.10.120/24 dev enp0s20u1u1
-- ssh root@ev3dev
-- ev3_manager
-- open new terminal
-- ssh z83
-- cd projects/rosev3
-- ./startall.sh
-- open new terminal
-- rosrun rviz rviz &
-- change fixed frame to map
-- add Map visualization, change topic to /map
+#+BEGIN_SRC bash
+# On laptop
+sudo ip route add 192.168.10.0/24 via 192.168.0.29 dev enp0s25
+
+# start z83
+ssh z83
+# start ev3dev (the USB port must be active for the ev3_gadget service to start)
+# On z83
+sudo ~/projects/rosev3/wlan-iptables.sh
+ping ev3dev
+# if it does not work, try plugging a USB Keyboard on ev3, type root<enter>gadget_on<enter>
+# run projects/rosev3/wlan-iptables.sh
+ssh root@ev3dev
+
+# On ev3dev
+date 
+# => check it is in sync. If not, check internet access. 
+ping 8.8.8.8
+ping www.google.fr
+ping asterix # Verify that asterix really has that IP !
+# if DNS not configured, systemctl restart ev3-gadget 
+ev3_manager
+
+# On z83 (open new terminal, ssh z83)
+roslaunch ev3_bringup motors.launch
+# - cd projects/rosev3
+# - ./startall.sh
+
+# On laptop (open new terminal)
+ping ev3dev # If it does not work, check ip route
+rosrun rviz rviz &
+# change fixed frame to map
+# add Map visualization, change topic to /map
+#+END_SRC
+
+** Debug procedure
+- check networking between ev3dev <-> z83 <-> laptop
+- ping between machines.
+- check "ip a": sometimes the router could give a wrong IP
+#+BEGIN_SRC bash
+# On one machine
+nc -l 1234
+# on the other machine
+echo hello|nc the_other_machine_hostname 1234
+#+END_SRC
+- use only hostnames to test it. hostnames and IPs should be consistent accross all devices
+- in rviz, set fixed frame as /map, and check if TF does not have any warnings
 
 ** Progress 
 - debug tf: rosrun tf view_frames && evince frames.pdf
